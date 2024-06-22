@@ -1,0 +1,6 @@
+__pycache__/
+data/
+feip_models/
+xlsx/
+
+.vscode/
