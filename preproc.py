@@ -1,8 +1,37 @@
 import pandas as pd
 import numpy as np
+import sklearn
 from sklearn.base import BaseEstimator
+from sklearn.compose import ColumnTransformer
 
 pd.set_option("future.no_silent_downcasting", True)
+sklearn.set_config(transform_output="pandas")
+
+
+# parse inconsistent floats, booleans, convert to proper dtypes
+def apply_dtype_tfrm(
+  X: pd.DataFrame, features: pd.DataFrame
+) -> pd.DataFrame:
+  int_ft = features.index[features["Dtype"] == "int"]
+  float_ft = features.index[features["Dtype"] == "float"]
+  datetime_ft = features.index[features["Dtype"] == "datetime"]
+  boolean_ft = features.index[features["Dtype"] == "boolean"]
+
+  dtype_tfrm = ColumnTransformer(
+    [
+      ("int_tfrm", IntTransformer(), int_ft),
+      ("float_tfrm", FloatTransformer(), float_ft),
+      ("datetime_tfrm", DatetimeTransformer(), datetime_ft),
+      ("boolean_tfrm", BooleanTransformer(), boolean_ft),
+    ],
+    remainder="passthrough",
+    verbose_feature_names_out=False,
+  )
+  return dtype_tfrm.fit_transform(X)
+
+
+INT_DTYPE = 'Int32'
+FLOAT_DTYPE = 'Float32'
 
 
 # remove spaces, replace comma with dot
@@ -62,7 +91,7 @@ class OptimusPrime(BaseEstimator):
 class IntTransformer(OptimusPrime):
 
   def transform(self, X: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
-    return X.map(self._into_int).astype("Int32")
+    return X.map(self._into_int).astype(INT_DTYPE)
 
   def _into_int(self, value) -> int:
     # convert string to float (float can be NaN)
@@ -77,7 +106,7 @@ class IntTransformer(OptimusPrime):
 class FloatTransformer(OptimusPrime):
 
   def transform(self, X: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
-    return X.map(self._into_float).astype("Float32")
+    return X.map(self._into_float).astype(FLOAT_DTYPE)
 
   def _into_float(self, value) -> float:
     # convert string to float (float can be NaN)
@@ -104,4 +133,4 @@ class BooleanTransformer(OptimusPrime):
   def transform(self, X: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     return X.map(
       lambda value: self.__class__.MAP[value.lower().strip()]
-    ).astype("Int32")
+    ).astype(FLOAT_DTYPE)
