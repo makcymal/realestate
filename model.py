@@ -44,3 +44,43 @@ class CatgImputer(BaseEstimator):
         continue
       X.loc[to_impute.index, col] = self.clf[col].predict(to_impute)
     return X
+
+
+class PassthroughTransformer(BaseEstimator):
+  def fit(self, X: pd.DataFrame, *args, **kwargs):
+    return self
+
+  def transform(self, X: pd.Series) -> pd.Series:
+    return X
+
+  def inverse_transform(self, X: pd.Series) -> pd.Series:
+    return X
+
+
+class LogarithmicTransformer(BaseEstimator):
+  def fit(self, X: pd.DataFrame, *args, **kwargs):
+    return self
+
+  def transform(self, X: pd.Series) -> pd.Series:
+    return np.log(X)
+
+  def inverse_transform(self, X: pd.Series) -> pd.Series:
+    return np.exp(X)
+
+
+class NoiseAdder(BaseEstimator):
+  def fit(self, X: pd.DataFrame, y: pd.DataFrame, *args, **kwargs):
+    return self
+
+  def transform(
+    self, X: pd.DataFrame, y: pd.DataFrame, *args, **kwargs
+  ) -> pd.DataFrame:
+    rng = np.random.default_rng(424)
+    noised = X.copy()
+    for col in X.columns:
+      std = X[col].std()
+      noised[col] += rng.normal(loc=0, scale=std, size=noised[col].shape)
+
+    return pd.concat([X, noised], ignore_index=True), pd.concat(
+      [y, y], ignore_index=True
+    )
